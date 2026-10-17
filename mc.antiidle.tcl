@@ -1,5 +1,7 @@
 ##
-# Anti Idle v1.0 by (Carl M. Gregory) MC_8 <gregory@worldinter.net>
+# Anti Idle v1.0.1 by (Carl M. Gregory) MC_8 <gregory@worldinter.net>
+#
+# If you have any comments/suggestions/ideas/bug reports, please email me.
 #
 # My SVS Website - http://mc.purehype.net/
 ##
@@ -32,6 +34,12 @@
 ##
 # History
 ##
+# v1.0.1 (03.11.01)
+#  MC_8 - If this script loaded, it disabled all public bind's (on all scripts),
+#         this is a minor problem with TCL that was easily compensated.
+#  MC_8 - Jens Bergmann - Fixed `Tcl error [mc:aidle:raw:privmsg]: list element
+#                         in quotes followed by "" instead of space`
+#
 # v1.0 (02.03.01)
 #  MC_8 - ]2501 - inital release
 ##
@@ -149,8 +157,8 @@ set mc_aidle(svs:stableonly) 0
 
 
 ### Do not edit past this part ###
-set mc_aidle(version) v1.0
-set mc_aidle(svs:script) "antiidle 001000000000"
+set mc_aidle(version) v1.0.1
+set mc_aidle(svs:script) "antiidle 001000001000"
 set mc_aidle(svs:server) "mc.purehype.net 8085"
 
 if {$numversion < "1050000"} {
@@ -187,7 +195,7 @@ proc mc:aidle:join {nick uhost hand chan} {
 
 bind pubm - * mc:aidle:pubm
 proc mc:aidle:pubm {nick uhost hand chan args} {
- mc:aidle:inter:text $nick $hand $chan $args
+ mc:aidle:inter:text $nick $hand $chan [join $args]
 }
 
 bind notc - * mc:aidle:notc
@@ -198,18 +206,19 @@ proc mc:aidle:notc {nick uhost hand text dest} {
  }
 }
 
-bind raw - privmsg mc:aidle:raw:privmsg
+catch {unbind raw - privmsg mc:aidle:raw:privmsg}
+bind raw - PRIVMSG mc:aidle:raw:privmsg
 proc mc:aidle:raw:privmsg {from key args} {
  global botnick
  set nick [lindex [split $from !] 0]
  set hand [nick2hand $nick]
  set args [join $args]
- set dest [lindex $args 0]
+ set dest [lindex [mc:ai:filt $args] 0]
  if {[string tolower $dest] == [string tolower $botnick]} {return 0}
- set args [string trimleft [lrange $args 1 e] :]
+ set args [join [string range [lrange [mc:ai:filt $args] 1 e] 1 e]]
  if {([string index $args 0] == "") &&
      ([string index $args [expr [string length $args]-1]] == "")} {
-  mc:aidle:inter:text $nick $hand $dest "{[string range $args 1 [expr [string length $args]-2]]}"
+  mc:aidle:inter:text $nick $hand $dest "[string range $args 1 [expr [string length $args]-2]]"
  };return 0
 }
 
@@ -536,6 +545,21 @@ proc mc:aidle:inter:strip-reverse {ar} {
 
 proc mc:aidle:inter:strip-all {ar} {
  return [mc:aidle:inter:strip-reverse [mc:aidle:inter:strip-uline [mc:aidle:inter:strip-bold [mc:aidle:inter:strip-color $ar]]]]
+}
+
+proc mc:ai:filt {data} {
+ regsub -all -- \\\\ $data \\\\\\\\ data ; regsub -all -- \\\[ $data \\\\\[ data ; regsub -all -- \\\] $data \\\\\] data
+ regsub -all -- \\\} $data \\\\\} data ; regsub -all -- \\\{ $data \\\\\{ data ; regsub -all -- \\\" $data \\\\\" data ; return $data
+}
+
+proc mc:ai:unfilt {data} {
+ regsub -all -- \\\\\\\\ $data \\ data
+ regsub -all -- \\\\\\\[ $data \[ data
+ regsub -all -- \\\\\\\] $data \] data
+ regsub -all -- \\\\\} $data \} data
+ regsub -all -- \\\\\{ $data \{ data
+ regsub -all -- \\\\\" $data \" data
+ return $data
 }
 
 if {$mc_aidle(svs:enabled)} {
