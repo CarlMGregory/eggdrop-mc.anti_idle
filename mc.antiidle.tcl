@@ -1,5 +1,5 @@
 ##
-# Anti Idle v1.0.1 by (Carl M. Gregory) MC_8 <gregory@worldinter.net>
+# Anti Idle v1.0.2 by (Carl M. Gregory) MC_8 <gregory@worldinter.net>
 #
 # If you have any comments/suggestions/ideas/bug reports, please email me.
 #
@@ -34,6 +34,9 @@
 ##
 # History
 ##
+# v1.0.2 (09.17.01)
+#  MC_8 - Riccardo - Fixed 'invalid command name "findip"'.
+#
 # v1.0.1 (03.11.01)
 #  MC_8 - If this script loaded, it disabled all public bind's (on all scripts),
 #         this is a minor problem with TCL that was easily compensated.
@@ -157,8 +160,8 @@ set mc_aidle(svs:stableonly) 0
 
 
 ### Do not edit past this part ###
-set mc_aidle(version) v1.0.1
-set mc_aidle(svs:script) "antiidle 001000001000"
+set mc_aidle(version) v1.0.2
+set mc_aidle(svs:script) "antiidle 001000002000"
 set mc_aidle(svs:server) "mc.purehype.net 8085"
 
 if {$numversion < "1050000"} {
@@ -468,6 +471,52 @@ proc mc:aidle:inter:masktype {uhost type} {
  if {$_host != [set temp [string range $_host [expr [string length $_host]-63] e]]} {
   set _host *[string trimleft $temp *]
  } ; return $_nick!$_ident@$_host
+}
+
+proc findip {args} {
+ catch {unset mc_found_ip}
+ if {![string match *.*.*.* $args]} {return 0}
+ foreach arg $args {
+  if {[string match *.*.*.* $arg]} {
+   set mc_testa [split $arg "."] ; set i 0
+   while {[llength $mc_testa] != $i} {
+    set mc_test [lrange $mc_testa $i end]
+    if {[string length [lindex $mc_test 1]]<4 && [string length [lindex $mc_test 2]]<4} {
+     if {[lindex $mc_test 1] < 256 && [lindex $mc_test 2] < 256 && [lindex $mc_test 1] >= 0 && [lindex $mc_test 2] >= 0} {
+      set first "abcdefghi"
+      if {[string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 1]] <= 9 && [string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 1]] >= 0} {
+       set first [string range [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 1] end]
+       if {[string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 2]] <= 9 && [string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 2]] >= 0} {
+        set first [string range [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 2] end]
+        if {[string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 3]] <= 9 && [string index [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 3]] >= 0} {
+         set first [string range [lindex $mc_test 0] [expr [string length [lindex $mc_test 0]] - 3] end]
+        }
+       }
+      }
+      set second [lindex $mc_test 1] ; set third [lindex $mc_test 2] ; set fourth "abcdefghi"
+      if {[string index [lindex $mc_test 3] 0] <= 9 && [string index [lindex $mc_test 3] 0] >= 0} {
+       set fourth [string index [lindex $mc_test 3] 0]
+       if {[string index [lindex $mc_test 3] 1] <= 9 && [string index [lindex $mc_test 3] 1] >= 0} {
+        set fourth $fourth[string index [lindex $mc_test 3] 1]
+        if {[string index [lindex $mc_test 3] 2] <= 9 && [string index [lindex $mc_test 3] 2] >= 0} {
+         set fourth $fourth[string index [lindex $mc_test 3] 2]
+        }
+       }
+      }
+      if {($first < 256) && ($second < 256) && ($third < 256) &&
+          ($fourth < 256) && ($first > 0) && ($second > 0) &&
+          ($third > 0) && ($fourth > 0) && ([string index $first 0] > 0) &&
+          ([string index $second 0] > 0) && ([string index $third 0] > 0) &&
+          ([string index $fourth 0] > 0)} {
+       if {[info exists mc_found_ip]} {
+        set mc_found_ip "$mc_found_ip $first.$second.$third.$fourth"
+       } {set mc_found_ip $first.$second.$third.$fourth}
+      }
+     }
+    } ; incr i +1
+   }
+  }
+ } ; if {[info exists mc_found_ip]} {return $mc_found_ip} {return 0}
 }
 
 proc mc:aidle:inter:strip-color {ar} {
